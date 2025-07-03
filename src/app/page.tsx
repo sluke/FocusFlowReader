@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, type ReactNode, useTransition } from 'react';
@@ -123,6 +124,8 @@ export default function Home() {
                 propName = 'clipRule';
             } else if (lowerCaseName === 'itemprop') {
                 propName = 'itemProp';
+            } else if (lowerCaseName === 'datetime') {
+                propName = 'dateTime';
             }
 
 
