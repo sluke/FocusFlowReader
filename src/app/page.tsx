@@ -140,6 +140,18 @@ export default function Home() {
             props[propName] = attr.value;
         });
 
+        const formTags = ['input', 'textarea', 'select'];
+        if (formTags.includes(tagName)) {
+          if (props.value !== undefined) {
+            props.defaultValue = props.value;
+            delete props.value;
+          }
+          if (props.checked !== undefined) {
+            props.defaultChecked = props.checked;
+            delete props.checked;
+          }
+        }
+
         return React.createElement(tagName, props, ...children);
       }
       return null;
