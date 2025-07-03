@@ -71,7 +71,7 @@ export async function getUrlContent(url: string) {
     } catch (error) {
         if (error instanceof Error) {
             // Provide more user-friendly error messages for common network issues
-            if (error.message.includes('fetch failed')) {
+            if (error.message.toLowerCase().includes('fetch failed')) {
                  return { success: false, error: "Could not connect to the URL. Please check the address and your network connection." };
             }
             return { success: false, error: `An error occurred: ${error.message}` };
