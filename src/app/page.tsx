@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, type ReactNode, useTransition } from 'react';
@@ -104,7 +105,7 @@ export default function Home() {
         const props: {[key: string]: any} = { key };
         Array.from(element.attributes).forEach(attr => {
             const lowerCaseName = attr.name.toLowerCase();
-            if (lowerCaseName.startsWith('on')) {
+            if (lowerCaseName.startsWith('on') || lowerCaseName === 'style') {
                 return;
             }
 
