@@ -97,11 +97,21 @@ export default function Home() {
 
         const props: {[key: string]: any} = { key };
         Array.from(element.attributes).forEach(attr => {
-            let name = attr.name.toLowerCase();
-            if (name === 'class') name = 'className';
-            if (name === 'for') name = 'htmlFor';
-            if (name.startsWith('on')) return;
-            props[name] = attr.value;
+            const lowerCaseName = attr.name.toLowerCase();
+            if (lowerCaseName.startsWith('on')) {
+                return;
+            }
+
+            let propName = attr.name;
+            if (lowerCaseName === 'class') {
+                propName = 'className';
+            } else if (lowerCaseName === 'for') {
+                propName = 'htmlFor';
+            } else if (lowerCaseName === 'viewbox') {
+                propName = 'viewBox';
+            }
+
+            props[propName] = attr.value;
         });
 
         return React.createElement(tagName, props, ...children);
