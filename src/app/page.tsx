@@ -18,6 +18,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +30,7 @@ export default function Home() {
   const [processedContent, setProcessedContent] = useState<ReactNode[] | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [highlightPercentage, setHighlightPercentage] = useState(30);
 
   const processAndSetContent = (text: string) => {
     if (!text) {
@@ -43,7 +45,7 @@ export default function Home() {
     const styledContent = tokens.map((token, index) => {
       // We only want to highlight actual words, not punctuation or whitespace.
       if (/[\p{L}\p{N}]/u.test(token)) {
-        if (Math.random() < 0.2) { // 20% chance to highlight
+        if (Math.random() < highlightPercentage / 100) {
           return (
             <span key={index} className="font-highlight bg-accent/30 rounded-[3px] px-0.5">
               {token}
@@ -116,7 +118,20 @@ export default function Home() {
             </TabsContent>
           </Tabs>
         </SidebarContent>
-        <SidebarFooter className="p-4">
+        <div className="p-4 border-t border-border">
+          <div className="space-y-2">
+            <Label htmlFor="highlight-percentage">Highlight Percentage ({highlightPercentage}%)</Label>
+            <Slider
+              id="highlight-percentage"
+              min={0}
+              max={100}
+              step={1}
+              value={[highlightPercentage]}
+              onValueChange={(value) => setHighlightPercentage(value[0])}
+            />
+          </div>
+        </div>
+        <SidebarFooter className="p-4 pt-0">
           <Button
             onClick={handleSubmit}
             disabled={isPending || (inputType === 'text' && !textValue) || (inputType === 'url' && !urlValue)}
