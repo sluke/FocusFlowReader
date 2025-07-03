@@ -37,6 +37,14 @@ export default function Home() {
       setProcessedContent(null);
       return;
     }
+    
+    const highlightStyles = [
+      'font-bold text-chart-1',
+      'italic text-chart-2',
+      'font-highlight text-chart-3',
+      'bg-chart-4/30 rounded-[3px] px-0.5',
+      'font-highlight font-bold text-chart-5',
+    ];
 
     // This regex splits the text by any character that is NOT a letter, number, or apostrophe,
     // while keeping the delimiters. This preserves punctuation and spacing.
@@ -46,8 +54,9 @@ export default function Home() {
       // We only want to highlight actual words, not punctuation or whitespace.
       if (/[\p{L}\p{N}]/u.test(token)) {
         if (Math.random() < highlightPercentage / 100) {
+          const randomStyle = highlightStyles[Math.floor(Math.random() * highlightStyles.length)];
           return (
-            <span key={index} className="font-highlight bg-accent/30 rounded-[3px] px-0.5">
+            <span key={index} className={randomStyle}>
               {token}
             </span>
           );
