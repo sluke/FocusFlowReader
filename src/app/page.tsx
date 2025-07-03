@@ -97,6 +97,10 @@ export default function Home() {
             .map((child, i) => domNodeToReact(child, `${key}-${i}`, highlightChildren))
             .filter(Boolean);
 
+        if (tagName === 'x') {
+            return React.createElement(React.Fragment, { key }, ...children);
+        }
+
         const props: {[key: string]: any} = { key };
         Array.from(element.attributes).forEach(attr => {
             const lowerCaseName = attr.name.toLowerCase();
