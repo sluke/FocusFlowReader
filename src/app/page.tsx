@@ -114,7 +114,16 @@ export default function Home() {
                 propName = 'viewBox';
             } else if (lowerCaseName === 'stroke-width') {
                 propName = 'strokeWidth';
+            } else if (lowerCaseName === 'stroke-linecap') {
+                propName = 'strokeLinecap';
+            } else if (lowerCaseName === 'stroke-linejoin') {
+                propName = 'strokeLinejoin';
+            } else if (lowerCaseName === 'fill-rule') {
+                propName = 'fillRule';
+            } else if (lowerCaseName === 'clip-rule') {
+                propName = 'clipRule';
             }
+
 
             props[propName] = attr.value;
         });
