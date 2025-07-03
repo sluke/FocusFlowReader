@@ -75,11 +75,11 @@ export default function Home() {
     const domParser = new DOMParser();
     const doc = domParser.parseFromString(html, 'text/html');
 
-    const domNodeToReact = (node: Node, key: string): ReactNode => {
+    const domNodeToReact = (node: Node, key: string, isHighlightingEnabled: boolean = true): ReactNode => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
         if (!text.trim()) return text;
-        return applyHighlighting(text, key);
+        return isHighlightingEnabled ? applyHighlighting(text, key) : text;
       }
 
       if (node.nodeType === Node.ELEMENT_NODE) {
@@ -91,8 +91,11 @@ export default function Home() {
             return null;
         }
 
+        const tagsToSkipHighlighting = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b', 'em', 'i', 'a', 'th', 'code', 'pre'];
+        const highlightChildren = isHighlightingEnabled && !tagsToSkipHighlighting.includes(tagName);
+
         const children = Array.from(element.childNodes)
-            .map((child, i) => domNodeToReact(child, `${key}-${i}`))
+            .map((child, i) => domNodeToReact(child, `${key}-${i}`, highlightChildren))
             .filter(Boolean);
 
         const props: {[key: string]: any} = { key };
