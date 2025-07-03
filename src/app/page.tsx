@@ -126,6 +126,8 @@ export default function Home() {
                 propName = 'itemProp';
             } else if (lowerCaseName === 'datetime') {
                 propName = 'dateTime';
+            } else if (lowerCaseName === 'itemscope') {
+                propName = 'itemScope'
             }
 
 
