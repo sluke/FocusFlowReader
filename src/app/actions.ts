@@ -6,53 +6,33 @@ import { z } from "zod";
 const urlSchema = z.string().url({ message: "Please enter a valid URL." });
 
 /**
- * Basic HTML sanitizer. It attempts to preserve basic document structure like
- * paragraphs and lists by converting block-level tags to newlines, while stripping
- * out all other HTML, scripts, and styles.
+ * Basic HTML sanitizer. It removes scripts, styles, and dangerous event handler 
+ * attributes to reduce security risks, while trying to preserve the main content
+ * and structure of the page.
  * @param html The raw HTML string.
- * @returns Sanitized plain text content with preserved structure.
+ * @returns Sanitized HTML string.
  */
 function sanitizeHtml(html: string): string {
-    let text = html;
+    let sanitized = html;
     
-    // Remove script, style, and comment blocks
-    text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
-    text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
-    text = text.replace(/<!--[\s\S]*?-->/gi, "");
+    // Remove script, style, and comment blocks entirely
+    sanitized = sanitized.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+    sanitized = sanitized.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+    sanitized = sanitized.replace(/<!--[\s\S]*?-->/gi, "");
 
-    // Replace block-level tags with newlines to preserve structure
-    text = text.replace(/<br\s*\/?>/gi, "\n");
-    text = text.replace(/<\/(p|div|h[1-6]|li|blockquote|tr|dt|dd)>/gi, "\n");
+    // Remove event handlers (e.g., onclick, onmouseover)
+    sanitized = sanitized.replace(/\s(on\w+)=(".*?"|'.*?'|[^\s>]+)/gi, '');
     
-    // Replace all other HTML tags with a space
-    text = text.replace(/<[^>]+>/g, ' ');
+    // Remove javascript from href attributes
+    sanitized = sanitized.replace(/href="javascript:[^"]*"/gi, 'href="#"');
 
-    // Decode common HTML entities
-    const entities: Record<string, string> = {
-        '&amp;': '&',
-        '&lt;': '<',
-        '&gt;': '>',
-        '&quot;': '"',
-        '&#39;': "'",
-        '&nbsp;': ' '
-    };
-    text = text.replace(/&[a-z]+;/gi, (entity) => entities[entity] || entity);
-
-    // Clean up whitespace
-    // 1. Collapse multiple spaces/tabs into a single space
-    text = text.replace(/[ \t]+/g, ' ');
-    // 2. Trim whitespace from the start/end of each line
-    text = text.split('\n').map(line => line.trim()).join('\n');
-    // 3. Collapse multiple newlines into a maximum of two (to create paragraph breaks)
-    text = text.replace(/\n{3,}/g, '\n\n');
-
-    return text.trim();
+    return sanitized;
 }
 
 /**
  * Server action to fetch content from a URL.
  * @param url The URL to fetch.
- * @returns An object with success status and either the content or an error message.
+ * @returns An object with success status and either the sanitized HTML content or an error message.
  */
 export async function getUrlContent(url: string) {
     const validation = urlSchema.safeParse(url);
@@ -77,9 +57,16 @@ export async function getUrlContent(url: string) {
             return { success: false, error: "The URL returned no content." };
         }
 
-        const textContent = sanitizeHtml(htmlContent);
+        const sanitizedContent = sanitizeHtml(htmlContent);
 
-        return { success: true, content: textContent };
+        // Prepend a <base> tag to the <head> to handle relative URLs for images, links, etc.
+        const finalUrl = response.url;
+        if (/<head/i.test(sanitizedContent) && !/<base\s/i.test(sanitizedContent)) {
+            const baseTag = `<base href="${finalUrl}" target="_blank">`;
+            return { success: true, content: sanitizedContent.replace(/(<head[^>]*>)/i, `$1${baseTag}`) };
+        }
+
+        return { success: true, content: sanitizedContent };
 
     } catch (error) {
         if (error instanceof Error) {

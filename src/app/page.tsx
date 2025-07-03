@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ReactNode, useTransition } from 'react';
+import React, { useState, type ReactNode, useTransition } from 'react';
 import { BookOpen, Link as LinkIcon, Loader2, Sparkles, Type } from 'lucide-react';
 
 import { getUrlContent } from './actions';
@@ -27,61 +27,113 @@ export default function Home() {
   const [inputType, setInputType] = useState('text');
   const [textValue, setTextValue] = useState('');
   const [urlValue, setUrlValue] = useState('');
-  const [processedContent, setProcessedContent] = useState<ReactNode[] | null>(null);
+  const [processedContent, setProcessedContent] = useState<ReactNode | ReactNode[] | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [highlightPercentage, setHighlightPercentage] = useState(30);
+
+  const highlightStyles = [
+    'font-bold text-chart-1',
+    'italic text-chart-2',
+    'font-highlight text-chart-3',
+    'bg-chart-4/30 rounded-[3px] px-0.5',
+    'font-highlight font-bold text-chart-5',
+  ];
+
+  const applyHighlighting = (text: string, keyPrefix: string) => {
+    const tokens = text.split(/([^\p{L}\p{N}']+)/gu);
+    return tokens.map((token, index) => {
+      if (/[\p{L}\p{N}]/u.test(token)) {
+        if (Math.random() < highlightPercentage / 100) {
+          const randomStyle = highlightStyles[Math.floor(Math.random() * highlightStyles.length)];
+          return <span key={`${keyPrefix}-${index}`} className={randomStyle}>{token}</span>;
+        }
+      }
+      return <span key={`${keyPrefix}-${index}`}>{token}</span>;
+    });
+  };
 
   const processAndSetContent = (text: string) => {
     if (!text) {
       setProcessedContent(null);
       return;
     }
-    
-    const highlightStyles = [
-      'font-bold text-chart-1',
-      'italic text-chart-2',
-      'font-highlight text-chart-3',
-      'bg-chart-4/30 rounded-[3px] px-0.5',
-      'font-highlight font-bold text-chart-5',
-    ];
+    const paragraphs = text.split(/\n+/).map((para, pIndex) => {
+      if (!para.trim()) return null;
+      return <p key={pIndex}>{applyHighlighting(para, `p-${pIndex}`)}</p>;
+    }).filter(Boolean);
 
-    // This regex splits the text by any character that is NOT a letter, number, or apostrophe,
-    // while keeping the delimiters. This preserves punctuation and spacing.
-    const tokens = text.split(/([^\p{L}\p{N}']+)/gu);
+    setProcessedContent(paragraphs);
+  };
+  
+  const processHtmlAndSetContent = (html: string) => {
+    if (typeof window === 'undefined' || !html) {
+      setProcessedContent(null);
+      return;
+    }
 
-    const styledContent = tokens.map((token, index) => {
-      // We only want to highlight actual words, not punctuation or whitespace.
-      if (/[\p{L}\p{N}]/u.test(token)) {
-        if (Math.random() < highlightPercentage / 100) {
-          const randomStyle = highlightStyles[Math.floor(Math.random() * highlightStyles.length)];
-          return (
-            <span key={index} className={randomStyle}>
-              {token}
-            </span>
-          );
-        }
+    const domParser = new DOMParser();
+    const doc = domParser.parseFromString(html, 'text/html');
+
+    const domNodeToReact = (node: Node, key: string): ReactNode => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || '';
+        if (!text.trim()) return text;
+        return applyHighlighting(text, key);
       }
-      return <span key={index}>{token}</span>;
-    });
 
-    setProcessedContent(styledContent);
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        const tagName = element.tagName.toLowerCase();
+        
+        const unsupportedTags = ['script', 'style', 'iframe', 'head', 'meta', 'link', 'title', 'noscript'];
+        if (unsupportedTags.includes(tagName)) {
+            return null;
+        }
+
+        const children = Array.from(element.childNodes)
+            .map((child, i) => domNodeToReact(child, `${key}-${i}`))
+            .filter(Boolean);
+
+        const props: {[key: string]: any} = { key };
+        Array.from(element.attributes).forEach(attr => {
+            let name = attr.name.toLowerCase();
+            if (name === 'class') name = 'className';
+            if (name === 'for') name = 'htmlFor';
+            if (name.startsWith('on')) return;
+            props[name] = attr.value;
+        });
+
+        return React.createElement(tagName, props, ...children);
+      }
+      return null;
+    };
+
+    const processedNodes = Array.from(doc.body.childNodes)
+      .map((node, i) => domNodeToReact(node, `node-${i}`))
+      .filter(Boolean);
+    
+    setProcessedContent(processedNodes);
   };
 
   const handleSubmit = async () => {
-    if (inputType === 'text') {
-      processAndSetContent(textValue);
-    } else {
+    setProcessedContent(null);
+    if (inputType === 'text' && textValue) {
+      startTransition(() => {
+        processAndSetContent(textValue);
+      });
+    } else if (inputType === 'url' && urlValue) {
       startTransition(async () => {
         const result = await getUrlContent(urlValue);
         if (result.success) {
-          processAndSetContent(result.content);
+          processHtmlAndSetContent(result.content);
         } else {
           toast({
             variant: "destructive",
             title: "Error fetching URL",
             description: result.error,
           });
+          setProcessedContent(null);
         }
       });
     }
@@ -169,7 +221,7 @@ export default function Home() {
               </div>
             ) : processedContent ? (
               <div className="prose prose-lg max-w-none text-foreground leading-relaxed">
-                <p className="whitespace-pre-wrap">{processedContent}</p>
+                {processedContent}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
