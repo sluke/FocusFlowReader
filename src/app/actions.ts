@@ -6,19 +6,25 @@ import { z } from "zod";
 const urlSchema = z.string().url({ message: "Please enter a valid URL." });
 
 /**
- * Basic HTML sanitizer. It removes script and style tags, then converts all other tags
- * to spaces to preserve word separation, and finally cleans up whitespace.
+ * Basic HTML sanitizer. It attempts to preserve basic document structure like
+ * paragraphs and lists by converting block-level tags to newlines, while stripping
+ * out all other HTML, scripts, and styles.
  * @param html The raw HTML string.
- * @returns Sanitized plain text content.
+ * @returns Sanitized plain text content with preserved structure.
  */
 function sanitizeHtml(html: string): string {
     let text = html;
     
-    // Remove script and style blocks
+    // Remove script, style, and comment blocks
     text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
     text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+    text = text.replace(/<!--[\s\S]*?-->/gi, "");
 
-    // Replace all other tags with a space
+    // Replace block-level tags with newlines to preserve structure
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<\/(p|div|h[1-6]|li|blockquote|tr|dt|dd)>/gi, "\n");
+    
+    // Replace all other HTML tags with a space
     text = text.replace(/<[^>]+>/g, ' ');
 
     // Decode common HTML entities
@@ -32,8 +38,15 @@ function sanitizeHtml(html: string): string {
     };
     text = text.replace(/&[a-z]+;/gi, (entity) => entities[entity] || entity);
 
-    // Collapse multiple whitespace characters into a single space
-    return text.replace(/\s+/g, ' ').trim();
+    // Clean up whitespace
+    // 1. Collapse multiple spaces/tabs into a single space
+    text = text.replace(/[ \t]+/g, ' ');
+    // 2. Trim whitespace from the start/end of each line
+    text = text.split('\n').map(line => line.trim()).join('\n');
+    // 3. Collapse multiple newlines into a maximum of two (to create paragraph breaks)
+    text = text.replace(/\n{3,}/g, '\n\n');
+
+    return text.trim();
 }
 
 /**
