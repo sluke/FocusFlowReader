@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, type ReactNode, useTransition } from 'react';
@@ -128,6 +127,8 @@ export default function Home() {
                 propName = 'dateTime';
             } else if (lowerCaseName === 'itemscope') {
                 propName = 'itemScope'
+            } else if (lowerCaseName === 'itemtype') {
+                propName = 'itemType'
             }
 
 
