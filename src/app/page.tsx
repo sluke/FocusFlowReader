@@ -109,6 +109,8 @@ export default function Home() {
                 propName = 'htmlFor';
             } else if (lowerCaseName === 'viewbox') {
                 propName = 'viewBox';
+            } else if (lowerCaseName === 'stroke-width') {
+                propName = 'strokeWidth';
             }
 
             props[propName] = attr.value;
