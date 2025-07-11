@@ -30,7 +30,7 @@ export default function Home() {
   const [processedContent, setProcessedContent] = useState<ReactNode | ReactNode[] | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const [highlightPercentage, setHighlightPercentage] = useState(30);
+  const [highlightPercentage, setHighlightPercentage] = useState(50);
 
   const highlightStyles = [
     'font-bold text-chart-1',
