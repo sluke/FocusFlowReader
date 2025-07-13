@@ -6,18 +6,9 @@ import { BookOpen, Link as LinkIcon, Loader2, Sparkles, Type } from 'lucide-reac
 
 import { getUrlContent } from './actions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -91,7 +82,7 @@ export default function Home() {
             return null;
         }
 
-        const tagsToSkipHighlighting = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b', 'em', 'i', 'a', 'th', 'code', 'pre'];
+        const tagsToSkipHighlighting = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b', 'em', 'i', 'a', 'th', 'code', 'pre', 'blockquote'];
         const highlightChildren = isHighlightingEnabled && !tagsToSkipHighlighting.includes(tagName);
 
         const children = Array.from(element.childNodes)
@@ -135,7 +126,6 @@ export default function Home() {
             } else if (lowerCaseName === 'itemtype') {
                 propName = 'itemType'
             }
-
 
             props[propName] = attr.value;
         });
@@ -188,34 +178,33 @@ export default function Home() {
   };
 
   return (
-    <SidebarProvider defaultOpen>
-      <Sidebar>
-        <SidebarHeader className="p-4">
-          <div className="flex items-center gap-2">
-             <BookOpen className="h-6 w-6 text-primary" />
-             <h1 className="text-xl font-semibold">FocusFlow Reader</h1>
+    <div className="flex flex-col h-screen bg-secondary/40">
+      <header className="p-4 border-b bg-background shadow-sm">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpen className="h-6 w-6 text-primary" />
+            <h1 className="text-xl font-semibold">FocusFlow Reader</h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             Paste text or enter a URL to reformat it for better focus.
           </p>
-        </SidebarHeader>
-        <SidebarContent className="p-0">
-          <Tabs value={inputType} onValueChange={setInputType} className="h-full flex flex-col">
-            <TabsList className="mx-4 grid w-auto grid-cols-2">
+
+          <Tabs value={inputType} onValueChange={setInputType} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="text"><Type className="mr-2 h-4 w-4"/> Paste Text</TabsTrigger>
               <TabsTrigger value="url"><LinkIcon className="mr-2 h-4 w-4"/> From URL</TabsTrigger>
             </TabsList>
-            <TabsContent value="text" className="flex-grow p-4 pt-2">
+            <TabsContent value="text" className="pt-2">
               <Label htmlFor="text-input" className="sr-only">Paste Text</Label>
               <Textarea
                 id="text-input"
                 placeholder="Paste your content here..."
-                className="h-full resize-none"
+                className="h-32 resize-y"
                 value={textValue}
                 onChange={(e) => setTextValue(e.target.value)}
               />
             </TabsContent>
-            <TabsContent value="url" className="flex-grow p-4 pt-2">
+            <TabsContent value="url" className="pt-2">
               <Label htmlFor="url-input" className="sr-only">From URL</Label>
               <Input
                 id="url-input"
@@ -226,42 +215,38 @@ export default function Home() {
               />
             </TabsContent>
           </Tabs>
-        </SidebarContent>
-        <div className="p-4 border-t border-border">
-          <div className="space-y-2">
-            <Label htmlFor="highlight-percentage">Highlight Percentage ({highlightPercentage}%)</Label>
-            <Slider
-              id="highlight-percentage"
-              min={0}
-              max={100}
-              step={1}
-              value={[highlightPercentage]}
-              onValueChange={(value) => setHighlightPercentage(value[0])}
-            />
+          
+          <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
+            <div className="w-full sm:w-1/2 space-y-2">
+              <Label htmlFor="highlight-percentage">Highlight Percentage ({highlightPercentage}%)</Label>
+              <Slider
+                id="highlight-percentage"
+                min={0}
+                max={100}
+                step={1}
+                value={[highlightPercentage]}
+                onValueChange={(value) => setHighlightPercentage(value[0])}
+              />
+            </div>
+            <Button
+              onClick={handleSubmit}
+              disabled={isPending || (inputType === 'text' && !textValue) || (inputType === 'url' && !urlValue)}
+              className="w-full sm:w-1/2"
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Generate
+            </Button>
           </div>
         </div>
-        <SidebarFooter className="p-4 pt-0">
-          <Button
-            onClick={handleSubmit}
-            disabled={isPending || (inputType === 'text' && !textValue) || (inputType === 'url' && !urlValue)}
-            className="w-full"
-          >
-            {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Generate
-          </Button>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="p-4">
-        <header className="flex items-center gap-4 mb-4">
-          <SidebarTrigger />
-          <h2 className="text-2xl font-bold tracking-tight">Processed Content</h2>
-        </header>
-        <Card className="flex-grow h-[calc(100vh-8rem)]">
-          <CardContent className="p-6 h-full overflow-y-auto">
+      </header>
+
+      <main className="flex-grow p-4 overflow-y-auto">
+        <Card className="flex-grow w-full max-w-4xl mx-auto min-h-full">
+          <CardContent className="p-6 h-full">
             {isPending ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -272,15 +257,17 @@ export default function Home() {
                 {processedContent}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[40vh]">
                 <BookOpen className="h-16 w-16 text-primary/50 mb-4" />
                 <h3 className="text-2xl font-semibold mb-2">Welcome to FocusFlow Reader</h3>
-                <p className="max-w-md">Your processed text will appear here. Simply paste your text or enter a URL in the sidebar and click 'Generate' to begin.</p>
+                <p className="max-w-md">Your processed text will appear here. Simply paste your text or enter a URL in the form above and click 'Generate' to begin.</p>
               </div>
             )}
           </CardContent>
         </Card>
-      </SidebarInset>
-    </SidebarProvider>
+      </main>
+    </div>
   );
 }
+
+    
