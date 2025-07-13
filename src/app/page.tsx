@@ -33,12 +33,17 @@ export default function Home() {
 
   const applyHighlighting = (text: string, keyPrefix: string) => {
     const tokens = text.split(/([^\p{L}\p{N}']+)/gu);
+    let wordIndex = 0;
     return tokens.map((token, index) => {
       if (/[\p{L}\p{N}]/u.test(token)) {
-        if (Math.random() < highlightPercentage / 100) {
-          const randomStyle = highlightStyles[Math.floor(Math.random() * highlightStyles.length)];
-          return <span key={`${keyPrefix}-${index}`} className={randomStyle}>{token}</span>;
+        // Use a deterministic approach based on word index instead of Math.random()
+        const shouldHighlight = (wordIndex * 13) % 100 < highlightPercentage;
+        if (shouldHighlight) {
+          const styleIndex = wordIndex % highlightStyles.length;
+          wordIndex++;
+          return <span key={`${keyPrefix}-${index}`} className={highlightStyles[styleIndex]}>{token}</span>;
         }
+        wordIndex++;
       }
       return <span key={`${keyPrefix}-${index}`}>{token}</span>;
     });
@@ -269,5 +274,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
