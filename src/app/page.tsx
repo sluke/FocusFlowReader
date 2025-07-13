@@ -2,25 +2,18 @@
 "use client";
 
 import React, { useState, type ReactNode, useTransition } from 'react';
-import { BookOpen, Link as LinkIcon, Loader2, Sparkles, Type } from 'lucide-react';
+import { BookOpen, Loader2, Sparkles, Type } from 'lucide-react';
 
-import { getUrlContent } from './actions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
-  const [inputType, setInputType] = useState('text');
   const [textValue, setTextValue] = useState('');
-  const [urlValue, setUrlValue] = useState('');
   const [processedContent, setProcessedContent] = useState<ReactNode | ReactNode[] | null>(null);
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
   const [highlightPercentage, setHighlightPercentage] = useState(80);
 
   const highlightStyles = [
@@ -62,122 +55,11 @@ export default function Home() {
     setProcessedContent(paragraphs);
   };
   
-  const processHtmlAndSetContent = (html: string) => {
-    if (typeof window === 'undefined' || !html) {
-      setProcessedContent(null);
-      return;
-    }
-
-    const domParser = new DOMParser();
-    const doc = domParser.parseFromString(html, 'text/html');
-
-    const domNodeToReact = (node: Node, key: string, isHighlightingEnabled: boolean = true): ReactNode => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent || '';
-        if (!text.trim()) return text;
-        return isHighlightingEnabled ? applyHighlighting(text, key) : text;
-      }
-
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
-        const tagName = element.tagName.toLowerCase();
-        
-        const unsupportedTags = ['script', 'style', 'iframe', 'head', 'meta', 'link', 'title', 'noscript'];
-        if (unsupportedTags.includes(tagName)) {
-            return null;
-        }
-
-        const tagsToSkipHighlighting = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b', 'em', 'i', 'a', 'th', 'code', 'pre', 'blockquote'];
-        const highlightChildren = isHighlightingEnabled && !tagsToSkipHighlighting.includes(tagName);
-
-        const children = Array.from(element.childNodes)
-            .map((child, i) => domNodeToReact(child, `${key}-${i}`, highlightChildren))
-            .filter(Boolean);
-
-        if (tagName === 'x') {
-            return React.createElement(React.Fragment, { key }, ...children);
-        }
-
-        const props: {[key: string]: any} = { key };
-        Array.from(element.attributes).forEach(attr => {
-            const lowerCaseName = attr.name.toLowerCase();
-            if (lowerCaseName.startsWith('on') || lowerCaseName === 'style') {
-                return;
-            }
-
-            let propName = attr.name;
-            if (lowerCaseName === 'class') {
-                propName = 'className';
-            } else if (lowerCaseName === 'for') {
-                propName = 'htmlFor';
-            } else if (lowerCaseName === 'viewbox') {
-                propName = 'viewBox';
-            } else if (lowerCaseName === 'stroke-width') {
-                propName = 'strokeWidth';
-            } else if (lowerCaseName === 'stroke-linecap') {
-                propName = 'strokeLinecap';
-            } else if (lowerCaseName === 'stroke-linejoin') {
-                propName = 'strokeLinejoin';
-            } else if (lowerCaseName === 'fill-rule') {
-                propName = 'fillRule';
-            } else if (lowerCaseName === 'clip-rule') {
-                propName = 'clipRule';
-            } else if (lowerCaseName === 'itemprop') {
-                propName = 'itemProp';
-            } else if (lowerCaseName === 'datetime') {
-                propName = 'dateTime';
-            } else if (lowerCaseName === 'itemscope') {
-                propName = 'itemScope'
-            } else if (lowerCaseName === 'itemtype') {
-                propName = 'itemType'
-            }
-
-            props[propName] = attr.value;
-        });
-
-        const formTags = ['input', 'textarea', 'select'];
-        if (formTags.includes(tagName)) {
-          if (props.value !== undefined) {
-            props.defaultValue = props.value;
-            delete props.value;
-          }
-          if (props.checked !== undefined) {
-            props.defaultChecked = props.checked;
-            delete props.checked;
-          }
-        }
-
-        return React.createElement(tagName, props, ...children);
-      }
-      return null;
-    };
-
-    const processedNodes = Array.from(doc.body.childNodes)
-      .map((node, i) => domNodeToReact(node, `node-${i}`))
-      .filter(Boolean);
-    
-    setProcessedContent(processedNodes);
-  };
-
   const handleSubmit = async () => {
     setProcessedContent(null);
-    if (inputType === 'text' && textValue) {
+    if (textValue) {
       startTransition(() => {
         processAndSetContent(textValue);
-      });
-    } else if (inputType === 'url' && urlValue) {
-      startTransition(async () => {
-        const result = await getUrlContent(urlValue);
-        if (result.success) {
-          processHtmlAndSetContent(result.content);
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error fetching URL",
-            description: result.error,
-          });
-          setProcessedContent(null);
-        }
       });
     }
   };
@@ -191,35 +73,19 @@ export default function Home() {
             <h1 className="text-xl font-semibold">FocusFlow Reader</h1>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Paste text or enter a URL to reformat it for better focus.
+            Paste text to reformat it for better focus.
           </p>
 
-          <Tabs value={inputType} onValueChange={setInputType} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="text"><Type className="mr-2 h-4 w-4"/> Paste Text</TabsTrigger>
-              <TabsTrigger value="url"><LinkIcon className="mr-2 h-4 w-4"/> From URL</TabsTrigger>
-            </TabsList>
-            <TabsContent value="text" className="pt-2">
-              <Label htmlFor="text-input" className="sr-only">Paste Text</Label>
-              <Textarea
-                id="text-input"
-                placeholder="Paste your content here..."
-                className="h-32 resize-y"
-                value={textValue}
-                onChange={(e) => setTextValue(e.target.value)}
-              />
-            </TabsContent>
-            <TabsContent value="url" className="pt-2">
-              <Label htmlFor="url-input" className="sr-only">From URL</Label>
-              <Input
-                id="url-input"
-                type="url"
-                placeholder="https://example.com"
-                value={urlValue}
-                onChange={(e) => setUrlValue(e.target.value)}
-              />
-            </TabsContent>
-          </Tabs>
+          <div className="pt-2">
+            <Label htmlFor="text-input" className="sr-only">Paste Text</Label>
+            <Textarea
+              id="text-input"
+              placeholder="Paste your content here..."
+              className="h-32 resize-y"
+              value={textValue}
+              onChange={(e) => setTextValue(e.target.value)}
+            />
+          </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
             <div className="w-full sm:w-1/2 space-y-2">
@@ -235,7 +101,7 @@ export default function Home() {
             </div>
             <Button
               onClick={handleSubmit}
-              disabled={isPending || (inputType === 'text' && !textValue) || (inputType === 'url' && !urlValue)}
+              disabled={isPending || !textValue}
               className="w-full sm:w-1/2"
             >
               {isPending ? (
@@ -265,7 +131,7 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[40vh]">
                 <BookOpen className="h-16 w-16 text-primary/50 mb-4" />
                 <h3 className="text-2xl font-semibold mb-2">Welcome to FocusFlow Reader</h3>
-                <p className="max-w-md">Your processed text will appear here. Simply paste your text or enter a URL in the form above and click 'Generate' to begin.</p>
+                <p className="max-w-md">Your processed text will appear here. Simply paste your text in the form above and click 'Generate' to begin.</p>
               </div>
             )}
           </CardContent>
